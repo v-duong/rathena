@@ -8337,7 +8337,7 @@ static bool buildin_delitem_search(map_session_data* sd, struct item* it, uint8 
 	bool delete_items = false;
 	int i, amount, size;
 	struct item *items;
-
+	
 	// prefer always non-equipped items
 	it->equip = 0;
 
@@ -20787,6 +20787,55 @@ BUILDIN_FUNC(checkquest)
 }
 
 /**
+ * questreward <ID>{,<char_id>};
+ **/
+BUILDIN_FUNC(questreward)
+{
+	map_session_data *sd;
+
+	if (!script_charid2sd(3,sd))
+		return SCRIPT_CMD_FAILURE;
+
+	if( quest_reward(sd, script_getnum(st, 2))  == -1 ){
+		script_reportsrc(st);
+		script_reportfunc(st);
+	}
+
+	return SCRIPT_CMD_SUCCESS;
+}
+
+/**
+ * questcountitem <ID>{,<int>,<char_id>};
+ **/
+BUILDIN_FUNC(questcountitem)
+{
+	map_session_data *sd;
+	std::vector<item> items;
+
+	if (!script_charid2sd(4,sd))
+		return SCRIPT_CMD_FAILURE;
+
+	bool deleteItems = script_getnum( st, 3 ) != 0;
+	
+	int countResult = quest_count_items(sd, script_getnum( st, 2 ), &items);
+
+	if (countResult == -1)
+		return SCRIPT_CMD_FAILURE;
+
+	script_pushint(st, countResult);
+
+	if (deleteItems) {
+		for(auto& i:items){
+			if (!buildin_delitem_search(sd, &i, 0, TABLE_INVENTORY))
+				return SCRIPT_CMD_FAILURE;
+		}
+	}
+
+	return SCRIPT_CMD_SUCCESS;
+}
+
+
+/**
  * isbegin_quest(<ID>{,<char_id>})
  **/
 BUILDIN_FUNC(isbegin_quest)
@@ -27464,6 +27513,8 @@ struct script_function buildin_func[] = {
 	BUILDIN_DEF(changequest, "ii?"),
 	BUILDIN_DEF(showevent, "i??"),
 	BUILDIN_DEF(questinfo_refresh, "?"),
+	BUILDIN_DEF(questreward, "i?"),
+	BUILDIN_DEF(questcountitem,"ii?"),
 
 	//Bound items [Xantara] & [Akinari]
 	BUILDIN_DEF2(getitem,"getitembound","vii?"),
