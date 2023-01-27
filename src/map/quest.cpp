@@ -339,6 +339,69 @@ uint64 QuestDatabase::parseBodyNode(const ryml::NodeRef& node) {
 		}
 	}
 
+	if (this->nodeExists(node, "TargetItems")) {
+		const auto& targetItems = node["TargetItems"];
+
+		for (const auto& itemNode : targetItems) {
+			t_itemid nameid;
+			
+			if (this->nodeExists(itemNode, "Item")) {
+				std::string item_name;
+
+				if (!this->asString(itemNode, "Item", item_name))
+					return 0;
+
+				std::shared_ptr<item_data> item = item_db.search_aegisname( item_name.c_str() );
+
+				if (!item) {
+					this->invalidWarning(itemNode["Item"], "Item %s does not exist, skipping.\n", item_name.c_str());
+					continue;
+				}
+
+				nameid = item->nameid;
+			} else {
+				continue;
+			}
+
+			std::shared_ptr<s_quest_targetitem> target;
+			std::vector<std::shared_ptr<s_quest_targetitem>>::iterator it = std::find_if(quest->targetitem.begin(), quest->targetitem.end(), [&](std::shared_ptr<s_quest_targetitem> const &v) {
+				return (*v).nameid == nameid;
+			});
+
+			bool targetExists = false;
+			if (it != quest->targetitem.end()) {
+				target = (*it);
+				targetExists = true;
+			}
+			else {
+				target = std::make_shared<s_quest_targetitem>();
+				target->nameid = nameid;
+			}
+
+			if (this->nodeExists(itemNode, "Count")) {
+				uint16 count;
+
+				if (!this->asUInt16(itemNode, "Count", count))
+					return 0;
+
+				if (!itemdb_isstackable(target->nameid)) {
+					this->invalidWarning(itemNode["Count"], "Item %s is not stackable, capping to 1.\n", itemdb_name(target->nameid));
+					count = 1;
+				}
+
+				if (targetExists)
+					target->count += count;
+				else
+					target->count = count;
+			} else {
+				if (!targetExists)
+					target->count = 1;
+			}
+
+			quest->targetitem.push_back(target);
+		}
+	}
+
 	if (this->nodeExists(node, "Drops")) {
 		const auto& drops = node["Drops"];
 
@@ -434,6 +497,7 @@ uint64 QuestDatabase::parseBodyNode(const ryml::NodeRef& node) {
 			quest->dropitem.push_back(target);
 		}
 	}
+	
 
 	if (this->nodeExists(node, "BaseExp")) {
 		uint64 baseExp;
@@ -956,6 +1020,56 @@ int quest_reward(map_session_data *sd, int quest_id)
 #endif
 
 	return 0;
+}
+
+/**
+ * Checks if a
+ * @param sd : Player's data
+ * @param quest_id : ID of the quest to remove
+ * @param items: holds item data for script to delete if needed
+ * @return 0 in case of items not found, 1 if items found, nonzero otherwise
+ */
+int quest_count_items(map_session_data *sd, int quest_id, std::vector<item> *items)
+{
+	std::shared_ptr<s_quest_db> qi = quest_search(quest_id);
+
+	if (!qi) {
+		ShowError("quest_count_items: quest %d not found in DB.\n", quest_id);
+		return -1;
+	}
+
+	for (const auto& target : qi->targetitem) {
+		std::shared_ptr<item_data> id = item_db.find(target->nameid);
+		int count = 0;
+
+		if (!id) {
+			ShowError("quest_count_items: Invalid item '%s'.\n", target->nameid); // returns string, regardless of what it was
+			return -1;
+		}
+
+		for (int i = 0; i < MAX_INVENTORY; i++) {
+			item *itm = &sd->inventory.u.items_inventory[i];
+
+			if (itm == nullptr || itm->nameid == 0 || itm->amount < 1)
+				continue;
+			if (itm->nameid == target->nameid && itm->expire_time == 0)
+				count += itm->amount;
+
+			if (count >= target->count)
+				continue;
+		}
+		if (count < target->count)
+			return 0;
+
+		if (items != nullptr){
+			struct item item;
+			item.nameid = target->nameid;
+			item.amount = target->count;
+			(*items).push_back(item);
+		}
+	}
+
+	return 1;
 }
 
 /**

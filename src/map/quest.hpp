@@ -25,6 +25,11 @@ struct s_quest_dropitem {
 	//bool isGUID;
 };
 
+struct s_quest_targetitem {
+	t_itemid nameid;
+	uint16 count;
+};
+
 struct s_quest_objective {
 	uint16 index;
 	uint16 mob_id;
@@ -43,6 +48,7 @@ struct s_quest_db {
 	time_t time;
 	bool time_at;
 	std::vector<std::shared_ptr<s_quest_objective>> objectives;
+	std::vector<std::shared_ptr<s_quest_targetitem>> targetitem;
 	std::vector<std::shared_ptr<s_quest_dropitem>> dropitem;
 	std::string name;
 	t_exp baseExp;
@@ -81,6 +87,7 @@ void quest_update_objective(map_session_data *sd, struct mob_data* md);
 int quest_update_status(map_session_data *sd, int quest_id, e_quest_state status);
 int quest_check(map_session_data *sd, int quest_id, e_quest_check_type type);
 int quest_reward(map_session_data *sd, int quest_id);
+int quest_count_items(map_session_data *sd, int quest_id, std::vector<item> *items);
 
 std::shared_ptr<s_quest_db> quest_search(int quest_id);
 
