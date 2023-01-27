@@ -18,6 +18,7 @@
 #include "battle.hpp"
 #include "chrif.hpp"
 #include "clif.hpp"
+#include "homunculus.hpp"
 #include "intif.hpp"
 #include "itemdb.hpp"
 #include "log.hpp"
@@ -431,6 +432,32 @@ uint64 QuestDatabase::parseBodyNode(const ryml::NodeRef& node) {
 			}
 
 			quest->dropitem.push_back(target);
+		}
+	}
+
+	if (this->nodeExists(node, "BaseExp")) {
+		uint64 baseExp;
+
+		if (!this->asUInt64(node, "BaseExp", baseExp))
+			return 0;
+
+		quest->baseExp = baseExp;
+	} else {
+		if (!exists) {
+			quest->baseExp = 0;
+		}
+	}
+
+	if (this->nodeExists(node, "JobExp")) {
+		uint64 jobExp;
+
+		if (!this->asUInt64(node, "JobExp", jobExp))
+			return 0;
+
+		quest->jobExp = jobExp;
+	} else {
+		if (!exists) {
+			quest->jobExp = 0;
 		}
 	}
 
@@ -893,6 +920,42 @@ int quest_check(map_session_data *sd, int quest_id, e_quest_check_type type)
 	}
 
 	return -1;
+}
+
+
+/**
+ * Grants a player a given quest's exp
+ * @param sd : Player's data
+ * @param quest_id : ID of the quest to remove
+ * @return 0 in case of success, nonzero otherwise
+ */
+int quest_reward(map_session_data *sd, int quest_id)
+{
+	std::shared_ptr<s_quest_db> qi = quest_search(quest_id);
+
+	if (!qi) {
+		ShowError("quest_add: quest %d not found in DB.\n", quest_id);
+		return -1;
+	}
+
+	t_exp base = qi->baseExp;
+	t_exp job = qi->jobExp;
+
+	// bonus for npc-given exp
+	double bonus = battle_config.quest_exp_rate / 100.;
+
+	if (base)
+		base = (int64) cap_value(base * bonus, 0, MAX_EXP);
+	if (job)
+		job = (int64) cap_value(job * bonus, 0, MAX_EXP);
+
+	pc_gainexp(sd, NULL, base, job, 1);
+#ifdef RENEWAL
+	if (base && sd->hd)
+		hom_gainexp(sd->hd, base * battle_config.homunculus_exp_gain / 100); // Homunculus only receive 10% of EXP
+#endif
+
+	return 0;
 }
 
 /**

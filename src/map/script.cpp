@@ -20787,6 +20787,25 @@ BUILDIN_FUNC(checkquest)
 }
 
 /**
+ * questreward <ID>{,<char_id>};
+ **/
+BUILDIN_FUNC(questreward)
+{
+	map_session_data *sd;
+
+	if (!script_charid2sd(3,sd))
+		return SCRIPT_CMD_FAILURE;
+
+	if( quest_reward(sd, script_getnum(st, 2))  == -1 ){
+		script_reportsrc(st);
+		script_reportfunc(st);
+	}
+
+	return SCRIPT_CMD_SUCCESS;
+}
+
+
+/**
  * isbegin_quest(<ID>{,<char_id>})
  **/
 BUILDIN_FUNC(isbegin_quest)
@@ -27464,6 +27483,7 @@ struct script_function buildin_func[] = {
 	BUILDIN_DEF(changequest, "ii?"),
 	BUILDIN_DEF(showevent, "i??"),
 	BUILDIN_DEF(questinfo_refresh, "?"),
+	BUILDIN_DEF(questreward, "i?"),
 
 	//Bound items [Xantara] & [Akinari]
 	BUILDIN_DEF2(getitem,"getitembound","vii?"),
