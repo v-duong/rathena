@@ -346,16 +346,28 @@ uint64 QuestDatabase::parseBodyNode(const ryml::NodeRef& node) {
 			t_itemid nameid;
 			
 			if (this->nodeExists(itemNode, "Item")) {
-				std::string item_name;
+				t_itemid item_id;
+				std::shared_ptr<item_data> item;
 
-				if (!this->asString(itemNode, "Item", item_name))
-					return 0;
+				if (this->asUInt32(itemNode, "Item", item_id)){
+					item = item_db.find(item_id);
 
-				std::shared_ptr<item_data> item = item_db.search_aegisname( item_name.c_str() );
+					if (!item) {
+						this->invalidWarning(itemNode["Item"], "Item %s does not exist, skipping.\n", item_id);
+						continue;
+					}
+				} else {
+					std::string item_name;
 
-				if (!item) {
-					this->invalidWarning(itemNode["Item"], "Item %s does not exist, skipping.\n", item_name.c_str());
-					continue;
+					if (!this->asString(itemNode, "Item", item_name))
+						return 0;
+
+					item = item_db.search_aegisname( item_name.c_str() );
+
+					if (!item) {
+						this->invalidWarning(itemNode["Item"], "Item %s does not exist, skipping.\n", item_name.c_str());
+						continue;
+					}
 				}
 
 				nameid = item->nameid;
