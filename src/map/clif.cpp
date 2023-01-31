@@ -18443,7 +18443,7 @@ void clif_parse_bg_queue_apply_request(int fd, map_session_data *sd)
 	char name[NAME_LENGTH];
 
 	safestrncpy(name, RFIFOCP(fd, 4), NAME_LENGTH);
-
+/*
 	if (sd->bg_queue_id > 0) {
 		//ShowWarning("clif_parse_bg_queue_apply_request: Received duplicate queue application: %d from player %s (AID:%d CID:%d).\n", type, sd->status.name, sd->status.account_id, sd->status.char_id);
 		clif_bg_queue_apply_result(BG_APPLY_DUPLICATE, name, sd); // Duplicate application warning
@@ -18459,6 +18459,9 @@ void clif_parse_bg_queue_apply_request(int fd, map_session_data *sd)
 		clif_bg_queue_apply_result(BG_APPLY_INVALID_APP, name, sd); // Someone sent an invalid queue type packet
 		return;
 	}
+	*/
+
+	instance_parse_manager_request(sd, name, type);
 }
 
 /// Outgoing battlegrounds queue apply result.

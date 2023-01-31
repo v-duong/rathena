@@ -26,6 +26,9 @@
 #   Name              Instance Name.
 #   TimeLimit         Total lifetime of instance in seconds. Use 0 to define infinite time. (Default: 3600)
 #   IdleTimeOut       Time before an idle instance is destroyed in seconds. Use 0 to define infinite idle time. (Default: 300)
+#   MinLevel          Minimum base level to enter the instance. (Default: 10)
+#   CooldownQuest     Quest ID for cooldown period. (Default: 0)
+#   PartyLimit        Maximum number of party member allowed for the instance with 0 being no limit. (Default: 0)
 #   NoNpc             Prevent copying NPCs from the source map. (Default: false)
 #   NoMapFlag         Prevent copying Mapflags from the source map. (Default: false)
 #   Destroyable       Toggles the ability to destroy the instance using instance 'Destroy' button. (Default: true)
@@ -39,12 +42,14 @@
 
 Header:
   Type: INSTANCE_DB
-  Version: 2
+  Version: 3
 
 Body:
   - Id: 1
     Name: Endless Tower
     TimeLimit: 14400
+    MinLevel: 50
+    CooldownQuest: 60200
     Enter:
       Map: 1@tower
       X: 50
@@ -58,6 +63,8 @@ Body:
   - Id: 2
     Name: Sealed Catacomb
     TimeLimit: 7200
+    MinLevel: 75
+    CooldownQuest: 3040
     Enter:
       Map: 1@cata
       X: 100
@@ -66,6 +73,8 @@ Body:
       2@cata: true
   - Id: 3
     Name: Orc's Memory
+    MinLevel: 30
+    CooldownQuest: 12059
     Enter:
       Map: 1@orcs
       X: 179
@@ -75,6 +84,8 @@ Body:
   - Id: 4
     Name: Nidhoggur's Nest
     TimeLimit: 14400
+    MinLevel: 70
+    CooldownQuest: 3135
     Enter:
       Map: 1@nyd
       X: 32
@@ -84,12 +95,14 @@ Body:
   - Id: 5
     Name: Mistwood Maze
     TimeLimit: 7200
+    MinLevel: 95
+    CooldownQuest: 7211
     Enter:
       Map: 1@mist
       X: 89
       Y: 29
   - Id: 6
-    Name: Culvert
+    Name: Culvert   #Needs Custom CD
     Enter:
       Map: 1@pump
       X: 63
@@ -98,18 +111,24 @@ Body:
       2@pump: true
   - Id: 7
     Name: Octopus Cave
+    MinLevel: 60
+    CooldownQuest: 4197  #Needs Custom CD
     Enter:
       Map: 1@cash
       X: 199
       Y: 99
   - Id: 8
     Name: Bangungot Hospital 2F
+    MinLevel: 100
+    CooldownQuest: 9224  #Needs Custom CD
     Enter:
       Map: 1@ma_h
       X: 40
       Y: 157
   - Id: 9
     Name: Buwaya Cave
+    MinLevel: 130
+    CooldownQuest: 4229
     Enter:
       Map: 1@ma_c
       X: 35
@@ -117,6 +136,8 @@ Body:
   - Id: 10
     Name: Bakonawa Lake
     TimeLimit: 7200
+    MinLevel: 140
+    CooldownQuest: 12278
     Enter:
       Map: 1@ma_b
       X: 64
@@ -124,12 +145,16 @@ Body:
   - Id: 11
     Name: Wolfchev's Laboratory
     TimeLimit: 14400
+    MinLevel: 150
+    CooldownQuest: 5112
     Enter:
       Map: 1@lhz
       X: 45
       Y: 148
   - Id: 12
     Name: Old Glast Heim
+    MinLevel: 130
+    CooldownQuest: 12317
     Enter:
       Map: 1@gl_k
       X: 150
@@ -137,14 +162,17 @@ Body:
     AdditionalMaps:
       2@gl_k: true
   - Id: 13
-    Name: Eclage Interior
+    Name: Eclage Interior # Needs Custom CD
     TimeLimit: 1200
+    MinLevel: 80
     Enter:
       Map: 1@ecl
       X: 60
       Y: 50
   - Id: 14
     Name: Sara's Memories
+    MinLevel: 99
+    CooldownQuest: 15002
     Enter:
       Map: 1@sara
       X: 250
@@ -152,6 +180,9 @@ Body:
   - Id: 15
     Name: Geffen Magic Tournament
     TimeLimit: 7200
+    MinLevel: 99
+    CooldownQuest: 9316
+    PartyLimit: 1
     Enter:
       Map: 1@gef
       X: 119
@@ -161,24 +192,33 @@ Body:
       1@ge_st: true
   - Id: 16
     Name: Horror Toy Factory
+    MinLevel: 140
+    CooldownQuest: 12331
     Enter:
       Map: 1@xm_d
       X: 111
       Y: 22
   - Id: 17
     Name: Faceworm's Nest
+    MinLevel: 140
+    CooldownQuest: 12325
     Enter:
       Map: 1@face
       X: 112
       Y: 370
   - Id: 18
     Name: Ghost Palace
+    MinLevel: 120
+    CooldownQuest: 1261
+    PartyLimit: 1
     Enter:
       Map: 1@spa
       X: 42
       Y: 196
   - Id: 19
     Name: Devil's Tower
+    MinLevel: 130
+    CooldownQuest: 7577
     Enter:
       Map: 1@tnm1
       X: 50
@@ -188,6 +228,8 @@ Body:
       1@tnm3: true
   - Id: 20
     Name: Assault on the Airship
+    MinLevel: 125
+    CooldownQuest: 15051
     Enter:
       Map: 1@air1
       X: 244
@@ -196,6 +238,8 @@ Body:
       1@air2: true
   - Id: 21
     Name: Fenrir and Sarah
+    MinLevel: 145
+    CooldownQuest: 9336
     Enter:
       Map: 1@glast
       X: 367
@@ -214,12 +258,16 @@ Body:
       Y: 35
   - Id: 24
     Name: Nightmarish Jitterbug
+    MinLevel: 120
+    CooldownQuest: 13182
     Enter:
       Map: 1@jtb
       X: 16
       Y: 17
   - Id: 25
     Name: Isle of Bios
+    MinLevel: 160
+    CooldownQuest: 15008
     Enter:
       Map: 1@dth1
       X: 17
@@ -229,30 +277,40 @@ Body:
       1@dth3: true
   - Id: 26
     Name: Morse's Cave
+    MinLevel: 160
+    CooldownQuest: 9319
     Enter:
       Map: 1@rev
       X: 26
       Y: 181
   - Id: 27
     Name: Temple of the Demon God
+    MinLevel: 160
+    CooldownQuest: 7600
     Enter:
       Map: 1@eom
       X: 101
       Y: 16
   - Id: 28
     Name: Central Laboratory
+    MinLevel: 140
+    CooldownQuest: 12347
     Enter:
       Map: 1@lab
       X: 120
       Y: 30
   - Id: 29
     Name: Last room
+    MinLevel: 140
+    CooldownQuest: 11379
     Enter:
       Map: 1@uns
       X: 145
       Y: 35
   - Id: 30
     Name: Charleston in Distress
+    MinLevel: 130
+    CooldownQuest: 13185
     Enter:
       Map: 1@mcd
       X: 127
@@ -265,12 +323,16 @@ Body:
       Y: 12
   - Id: 32
     Name: Room of Consciousness
+    MinLevel: 100
+    CooldownQuest: 7706
     Enter:
       Map: 1@mir
       X: 101
       Y: 10
   - Id: 33
     Name: Sky Fortress Invasion
+    MinLevel: 145
+    CooldownQuest: 9419
     Enter:
       Map: 1@sthb
       X: 54
@@ -280,6 +342,8 @@ Body:
       1@sthd: true
   - Id: 34
     Name: Heart Hunter War Base 1
+    MinLevel: 145
+    CooldownQuest: 12375
     Enter:
       Map: 1@swat
       X: 35
@@ -292,7 +356,9 @@ Body:
       Y: 118
 # There is officially only one (buggy) instance 'Werner Laboratory central room'
   - Id: 36
-    Name: Werner Laboratory central room#1
+    Name: Werner Laboratory central room#1  # Needs custom CD
+    MinLevel: 100
+    CooldownQuest: 16534
     Enter:
       Map: 1@slw
       X: 187
@@ -306,6 +372,8 @@ Body:
   - Id: 38
     Name: Infinite Space
     TimeLimit: 3600
+    MinLevel: 100
+    CooldownQuest: 12365
     Enter:
       Map: 1@infi
       X: 30
@@ -334,6 +402,8 @@ Body:
   - Id: 42
     Name: 2nd OS Search
     TimeLimit: 7200
+    MinLevel: 110
+    CooldownQuest: 12455
     Enter:
       Map: 1@os_a
       X: 335
@@ -341,6 +411,8 @@ Body:
   - Id: 43
     Name: Cor Memorial
     TimeLimit: 7200
+    MinLevel: 110
+    CooldownQuest: 16362
     Enter:
       Map: 1@cor
       X: 176

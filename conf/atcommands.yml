@@ -1019,6 +1019,9 @@ Body:
   - Command: roulette
     Help: |
       Opens the roulette UI.
+  - Command: destroy
+    Help: |
+      Destroys currently opened instance.
 
 Footer:
   Imports:
