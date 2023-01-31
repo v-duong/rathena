@@ -113,6 +113,7 @@ public:
 
 	const std::string getDefaultLocation() override;
 	uint64 parseBodyNode(const ryml::NodeRef& node) override;
+	void loadingFinished() override;
 };
 
 extern InstanceDatabase instance_db;
@@ -135,6 +136,7 @@ int instance_addmap(int instance_id);
 bool check_party_status(map_session_data *sd,struct party_data *pd, const char *name);
 void instance_parse_manager_request(map_session_data *sd, const char *name, short type);
 void instance_set_cooldown_quest(map_session_data *sd, const char *name);
+void instance_clear_all_cooldowns(map_session_data *sd);
 
 void instance_addnpc(std::shared_ptr<s_instance_data> idata);
 

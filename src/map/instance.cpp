@@ -40,6 +40,7 @@ int16 instance_start = 0; // Instance MapID start
 int instance_count = 1; // Total created instances
 
 std::unordered_map<int, std::shared_ptr<s_instance_data>> instances;
+std::vector<int> cooldownQuestList;
 
 const std::string InstanceDatabase::getDefaultLocation() {
 	return std::string(db_path) + "/instance_db.yml";
@@ -313,6 +314,16 @@ uint64 InstanceDatabase::parseBodyNode(const ryml::NodeRef& node) {
 		this->put(instance_id, instance);
 
 	return 1;
+}
+
+void InstanceDatabase::loadingFinished(){
+	for( const auto& pair : *this ){
+		if (pair.second->cooldownquest > 0) {
+			cooldownQuestList.push_back(pair.second->cooldownquest);
+		}
+	}
+
+	TypesafeYamlDatabase::loadingFinished();
 }
 
 InstanceDatabase instance_db;
@@ -1026,9 +1037,24 @@ void instance_set_cooldown_quest(map_session_data *sd, const char *name) {
 		ShowError("check_party_cooldown: Unknown instance %s was given as argument.\n", name);
 	}
 
+	// ignore default value. no cd quest?
+	if (db->cooldownquest == 0)
+		return;
+
 	quest_add(sd, db->cooldownquest);
 }
 
+/**
+ * Checks a player's cooldown quests and removes them if they exist
+ * @param sd: character session data
+ */
+void instance_clear_all_cooldowns(map_session_data *sd){
+	for( const auto& it : cooldownQuestList ){
+		if (quest_check(sd, it, PLAYTIME) != -1) {
+			quest_delete(sd, it);
+		}
+	}
+}
 
 /**
  * Checks each party member's cooldown quest and baselevel for a given instance.
