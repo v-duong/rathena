@@ -393,6 +393,12 @@ int party_invite(map_session_data *sd,map_session_data *tsd)
 	if( ( p = party_search(sd->status.party_id) ) == NULL )
 		return 0;
 
+
+	if (p->instance_id) {
+		clif_party_invite_reply( *sd, ( tsd ? tsd->status.name : "" ), PARTY_REPLY_INSTANCE_OPEN );
+		return 0;
+	}
+
 	// confirm if this player is a party leader
 	ARR_FIND(0, MAX_PARTY, i, p->data[i].sd == sd);
 
@@ -679,6 +685,9 @@ int party_removemember(map_session_data* sd, uint32 account_id, char* name)
 
 	if( p == NULL )
 		return 0;
+		
+	if (p->instance_id)
+		return 0;
 
 	// check the requesting char's party membership
 	ARR_FIND( 0, MAX_PARTY, i, p->party.member[i].account_id == sd->status.account_id && p->party.member[i].char_id == sd->status.char_id );
@@ -730,6 +739,9 @@ int party_leave(map_session_data *sd)
 	p = party_search(sd->status.party_id);
 
 	if( p == NULL )
+		return 0;
+
+	if (p->instance_id)
 		return 0;
 
 	ARR_FIND( 0, MAX_PARTY, i, p->party.member[i].account_id == sd->status.account_id && p->party.member[i].char_id == sd->status.char_id );

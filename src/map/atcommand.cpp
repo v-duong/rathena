@@ -10774,6 +10774,30 @@ ACMD_FUNC(addfame)
 	return 0;
 }
 
+ACMD_FUNC(destroy)
+{
+	nullpo_retr(-1, sd);
+
+	party_data *pd = party_search(sd->status.party_id);
+	if (pd == nullptr || !pd->instance_id) {
+		clif_displaymessage(sd->fd, "You are not in a party or instance not found."); 
+		return -1;
+	}
+
+	int leader_id;
+	ARR_FIND(0,MAX_PARTY,leader_id,pd->party.member[leader_id].leader);
+
+	if (sd != pd->data[leader_id].sd) {
+		clif_displaymessage(sd->fd, "You are not the party leader.");
+		return -1;
+	}
+
+	// TODO: check if atcommand user is leader
+
+	instance_destroy(pd->instance_id);
+	return 0;
+}
+
 /**
  * Opens the enchantgrade UI
  * Usage: @enchantgradeui
@@ -11135,6 +11159,7 @@ void atcommand_basecommands(void) {
 		ACMD_DEF(addfame),
 		ACMD_DEFR(enchantgradeui, ATCMD_NOCONSOLE|ATCMD_NOAUTOTRADE),
 		ACMD_DEFR(roulette, ATCMD_NOCONSOLE|ATCMD_NOAUTOTRADE),
+		ACMD_DEF(destroy),
 	};
 	AtCommandInfo* atcommand;
 	int i;

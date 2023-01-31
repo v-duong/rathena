@@ -24,6 +24,7 @@
 #include "npc.hpp"
 #include "party.hpp"
 #include "pc.hpp"
+#include "quest.hpp"
 
 using namespace rathena;
 
@@ -39,6 +40,7 @@ int16 instance_start = 0; // Instance MapID start
 int instance_count = 1; // Total created instances
 
 std::unordered_map<int, std::shared_ptr<s_instance_data>> instances;
+std::vector<int> cooldownQuestList;
 
 const std::string InstanceDatabase::getDefaultLocation() {
 	return std::string(db_path) + "/instance_db.yml";
@@ -118,6 +120,52 @@ uint64 InstanceDatabase::parseBodyNode(const ryml::NodeRef& node) {
 		if (!exists) {
 			instance->timeout = 300;
 			instance->infinite_timeout = false;
+		}
+	}
+
+
+	if (this->nodeExists(node, "MinLevel")) {
+		int minLevel;
+
+		if (!this->asInt32(node, "MinLevel", minLevel))
+			return 0;
+		
+		if (minLevel < 0)
+			minLevel = 0;
+		instance->minlevel = minLevel;
+	} else {
+		if (!exists) {
+			instance->minlevel = 10;
+		}
+	}
+
+	if (this->nodeExists(node, "CooldownQuest")) {
+		int32 cooldownquest;
+
+		if (!this->asInt32(node, "CooldownQuest", cooldownquest))
+			return 0;
+		
+		if (cooldownquest < 0)
+			cooldownquest = 0;
+		instance->cooldownquest = cooldownquest;
+	} else {
+		if (!exists) {
+			instance->cooldownquest = 0;
+		}
+	}
+		
+	if (this->nodeExists(node, "PartyLimit")) {
+		int partylimit;
+
+		if (!this->asInt32(node, "PartyLimit", partylimit))
+			return 0;
+		
+		if (partylimit < 0)
+			partylimit = 0;
+		instance->partylimit = partylimit;
+	} else {
+		if (!exists) {
+			instance->partylimit = 0;
 		}
 	}
 
@@ -266,6 +314,16 @@ uint64 InstanceDatabase::parseBodyNode(const ryml::NodeRef& node) {
 		this->put(instance_id, instance);
 
 	return 1;
+}
+
+void InstanceDatabase::loadingFinished(){
+	for( const auto& pair : *this ){
+		if (pair.second->cooldownquest > 0) {
+			cooldownQuestList.push_back(pair.second->cooldownquest);
+		}
+	}
+
+	TypesafeYamlDatabase::loadingFinished();
 }
 
 InstanceDatabase instance_db;
@@ -922,6 +980,135 @@ void instance_destroy_command(map_session_data *sd) {
 
 		instance_reqinfo(sd, gd->instance_id);
 	}
+}
+
+/**
+ * Handles incoming request from instance manager
+ * called by clif_parse_bg_queue_apply_request in clif.cpp
+ * @param sd: character session data
+ * @param name: instance name
+ * @param type: request type
+ * 				1 = enter instance
+ * 				2 = create instance
+ * @return True on success (no one on cooldown) or false on failure
+ */
+void instance_parse_manager_request(map_session_data *sd, const char *name, short type){
+	party_data *pd = party_search(sd->status.party_id);
+
+	if (pd == nullptr) {
+		clif_displaymessage(sd->fd, "You are not in a party."); 
+		return;
+	}
+
+	if (type == 1) { // Join
+		e_instance_enter res = instance_enter(sd, pd->instance_id, name, -1, -1);
+		if (res == IE_NOINSTANCE) {
+			clif_displaymessage(sd->fd, "There is no instance to enter."); 
+			return;
+		}
+		instance_set_cooldown_quest(sd, name);
+
+	} else if (type == 2) { // Create instance
+		if (pd->instance_id){
+			clif_displaymessage(sd->fd, "There is already an instance open."); 
+			return;
+		}
+
+		if (!check_party_status(sd, pd, name)) {
+			return;
+		}
+
+		instance_create(sd->status.party_id, name, IM_PARTY);
+	} else { // We shouldn't get to this case. Button should be disabled in client.
+		ShowWarning("clif_parse_bg_queue_apply_request: Received invalid queue type: %d from player %s (AID:%d CID:%d).\n", type, sd->status.name, sd->status.account_id, sd->status.char_id);
+		clif_bg_queue_apply_result(BG_APPLY_INVALID_APP, name, sd); // Someone sent an invalid queue type packet
+		return;
+	}
+}
+
+/**
+ * Checks each party member's cooldown quest for a given instance.
+ * @param sd: character session data
+ * @param name: instance name
+ */
+void instance_set_cooldown_quest(map_session_data *sd, const char *name) {
+	std::shared_ptr<s_instance_db> db = instance_search_db_name(name);
+	if (!db) {
+		ShowError("check_party_cooldown: Unknown instance %s was given as argument.\n", name);
+	}
+
+	// ignore default value. no cd quest?
+	if (db->cooldownquest == 0)
+		return;
+
+	quest_add(sd, db->cooldownquest);
+}
+
+/**
+ * Checks a player's cooldown quests and removes them if they exist
+ * @param sd: character session data
+ */
+void instance_clear_all_cooldowns(map_session_data *sd){
+	for( const auto& it : cooldownQuestList ){
+		if (quest_check(sd, it, PLAYTIME) != -1) {
+			quest_delete(sd, it);
+		}
+	}
+}
+
+/**
+ * Checks each party member's cooldown quest and baselevel for a given instance.
+ * @param sd: requester's map session data
+ * @param pd: party data
+ * @param name: instance name
+ * @return True on success (no one on cooldown) or false on failure
+ */
+bool check_party_status(map_session_data *sd, struct party_data *pd, const char *name) {
+	std::shared_ptr<s_instance_db> db = instance_search_db_name(name);
+	if (!db) {
+		ShowError("check_party_cooldown: Unknown instance %s was given as argument.\n", name);
+		return false;
+	}
+
+	if (db->partylimit > 0 && pd->party.count > db->partylimit) {
+		clif_displaymessage(sd->fd, "Instance creation failed. You are over the party member limit.");
+		return false;
+	}
+
+	int leader_id;
+	ARR_FIND(0,MAX_PARTY,leader_id,pd->party.member[leader_id].leader);
+
+	if (sd != pd->data[leader_id].sd) {
+		clif_displaymessage(sd->fd, "Instance creation failed. You are not the party leader.");
+		return false;
+	}
+
+	for (int i = 0; i < MAX_PARTY; i ++) {		
+		if (!pd->party.member[i].online) {
+			continue;
+		}
+
+		map_session_data *sd = pd->data[i].sd;
+
+		if (sd->status.base_level < db->minlevel) {
+			clif_displaymessage(sd->fd, "Instance creation failed. You are below the minimum level.");
+			if (!pd->party.member[i].leader) {
+				clif_displaymessage(pd->data[leader_id].sd->fd, "Instance creation failed. A party member is below the minimum level.");
+			}
+
+			return false;
+		}
+
+		if (quest_check(sd, db->cooldownquest, PLAYTIME) != -1){
+			clif_displaymessage(sd->fd, "Instance creation failed. You must wait to reenter this instance.");
+			if (!pd->party.member[i].leader) {
+				clif_displaymessage(pd->data[leader_id].sd->fd, "Instance creation failed. A party member has the instance on cooldown.");
+			}
+
+			return false;
+		}
+	}
+	return true;
 }
 
 /**

@@ -93,6 +93,9 @@ struct s_instance_db {
 	std::string name; ///< Instance name
 	int64 limit, ///< Duration limit
 		timeout; ///< Timeout limit
+	int minlevel;
+	int32 cooldownquest;
+	int partylimit;
 	bool nonpc;
 	bool nomapflag;
 	bool destroyable; ///< Destroyable flag
@@ -104,12 +107,13 @@ struct s_instance_db {
 
 class InstanceDatabase : public TypesafeYamlDatabase<int32, s_instance_db> {
 public:
-	InstanceDatabase() : TypesafeYamlDatabase("INSTANCE_DB", 2, 1) {
+	InstanceDatabase() : TypesafeYamlDatabase("INSTANCE_DB", 3, 1) {
 
 	}
 
 	const std::string getDefaultLocation() override;
 	uint64 parseBodyNode(const ryml::NodeRef& node) override;
+	void loadingFinished() override;
 };
 
 extern InstanceDatabase instance_db;
@@ -129,6 +133,10 @@ bool instance_delusers(int instance_id);
 void instance_generate_mapname(int map_id, int instance_id, char outname[MAP_NAME_LENGTH]);
 int16 instance_mapid(int16 m, int instance_id);
 int instance_addmap(int instance_id);
+bool check_party_status(map_session_data *sd,struct party_data *pd, const char *name);
+void instance_parse_manager_request(map_session_data *sd, const char *name, short type);
+void instance_set_cooldown_quest(map_session_data *sd, const char *name);
+void instance_clear_all_cooldowns(map_session_data *sd);
 
 void instance_addnpc(std::shared_ptr<s_instance_data> idata);
 
