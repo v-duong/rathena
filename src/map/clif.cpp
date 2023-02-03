@@ -10127,6 +10127,7 @@ void clif_name( struct block_list* src, struct block_list *bl, send_target targe
 
 				clif_send(&packet, sizeof(packet), src, target);
 			}else if( battle_config.show_mob_info ){
+				// use custom infotype, can be set by user
 				PACKET_ZC_ACK_REQNAMEALL packet = { 0 };
 
 				packet.packet_id = HEADER_ZC_ACK_REQNAMEALL;
@@ -10134,7 +10135,10 @@ void clif_name( struct block_list* src, struct block_list *bl, send_target targe
 				safestrncpy( packet.name, md->name, NAME_LENGTH );
 
 				char mobhp[50], *str_p = mobhp;
+				char mobstatus[50], *str_p2 = mobstatus;
+				char mobele[50], *str_p3 = mobele;
 
+/*
 				if( battle_config.show_mob_info&4 ){
 					str_p += sprintf( str_p, "Lv. %d | ", md->level );
 				}
@@ -10146,14 +10150,41 @@ void clif_name( struct block_list* src, struct block_list *bl, send_target targe
 				if( battle_config.show_mob_info&2 ){
 					str_p += sprintf( str_p, "HP: %u%% | ", get_percentage( md->status.hp, md->status.max_hp ) );
 				}
+*/
+				/*  0: Default
+				*   1: Shows Size/Element/Race status
+				*   2: Shows Size/Element/Race status + HP
+				*/
+
+				map_foreachinallarea_filter(clif_send_sub, 0, src->m, src->x-AREA_SIZE, src->y-AREA_SIZE, src->x+AREA_SIZE, src->y+AREA_SIZE, BL_PC, &packet, sizeof(packet), src, AREA);
+
+				str_p2 += sprintf( str_p2, "%s | %s ",  mrace[md->status.race], msize[md->status.size]);
+				str_p3 += sprintf( str_p3, "%s %d ",  melement[md->status.def_ele], md->status.ele_lv);
+				if (md->status.class_ == CLASS_BOSS)
+					str_p3 += sprintf( str_p3, "| Boss ");
+
+				if( str_p2 != mobstatus ){
+					*(str_p2-1) = '\0';
+					safestrncpy( packet.guild_name, mobstatus, NAME_LENGTH );
+				}
+				if( str_p3 != mobele ){
+					*(str_p3-1) = '\0';
+					safestrncpy( packet.position_name, mobele, NAME_LENGTH );
+				}
+
+				map_foreachinallarea_filter(clif_send_sub, 1, src->m, src->x-AREA_SIZE, src->y-AREA_SIZE, src->x+AREA_SIZE, src->y+AREA_SIZE, BL_PC, &packet, sizeof(packet), src, AREA);
+				
+				str_p += sprintf( str_p, "HP: %u%% ", get_percentage( md->status.hp, md->status.max_hp ) );
 
 				// Even thought mobhp ain't a name, we send it as one so the client can parse it. [Skotlex]
 				if( str_p != mobhp ){
-					*(str_p-3) = '\0'; //Remove trailing space + pipe.
+					*(str_p-1) = '\0'; //Remove trailing space + pipe.
 					safestrncpy( packet.party_name, mobhp, NAME_LENGTH );
 				}
 
-				clif_send(&packet, sizeof(packet), src, target);
+				map_foreachinallarea_filter(clif_send_sub, 2, src->m, src->x-AREA_SIZE, src->y-AREA_SIZE, src->x+AREA_SIZE, src->y+AREA_SIZE, BL_PC, &packet, sizeof(packet), src, AREA);
+
+				//clif_send(&packet, sizeof(packet), src, target);
 			} else {
 				PACKET_ZC_ACK_REQNAMEALL_NPC packet = { 0 };
 
@@ -10171,6 +10202,7 @@ void clif_name( struct block_list* src, struct block_list *bl, send_target targe
 #endif
 
 				clif_send(&packet, sizeof(packet), src, target);
+				
 			}
 		}
 			break;
@@ -10182,6 +10214,12 @@ void clif_name( struct block_list* src, struct block_list *bl, send_target targe
 			ShowError("clif_name: bad type %d(%d)\n", bl->type, bl->id);
 			return;
 	}
+}
+
+bool check_target_infotype(struct block_list* bl, int type){
+	map_session_data *sd = (map_session_data *)bl;
+
+	return false;
 }
 
 /// Taekwon Jump (TK_HIGHJUMP) effect (ZC_HIGHJUMP).

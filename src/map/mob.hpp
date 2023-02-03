@@ -187,6 +187,10 @@ enum e_aegis_monsterclass : int8 {
 	CLASS_MAX,
 };
 
+static const unsigned char msize[SZ_ALL][7] = { "Small", "Medium", "Large" };
+static const unsigned char mrace[RC_ALL][11] = { "Formless", "Undead", "Beast", "Plant", "Insect", "Fish", "Demon", "Demi-Human", "Angel", "Dragon", "Player" };
+static const unsigned char melement[ELE_ALL][8] = { "Neutral", "Water", "Earth", "Fire", "Wind", "Poison", "Holy", "Dark", "Ghost", "Undead" };
+
 struct s_mob_skill {
 	enum MobSkillState state;
 	uint16 skill_id,skill_lv;

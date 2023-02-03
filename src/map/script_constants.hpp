@@ -1867,6 +1867,7 @@
 	export_constant(SC_BEEF_RIB_STEW);
 	export_constant(SC_PORK_RIB_STEW);
 	export_constant(SC_WEAPONBREAKER);
+	export_constant(SC_SHOWMOBINFO);
 
 #ifdef RENEWAL
 	export_constant(SC_EXTREMITYFIST2);
