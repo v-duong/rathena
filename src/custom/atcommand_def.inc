@@ -11,3 +11,4 @@
 //ACMD_DEF(newcommand),
 
 ACMD_DEF(showmobinfo),
+ACMD_DEF(advstats),
