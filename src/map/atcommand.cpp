@@ -6201,6 +6201,7 @@ ACMD_FUNC(displayskill)
 	return 0;
 }
 
+
 /*==========================================
 * @displayskillcast by [Rytech]
 * Debug command to view casting animations for skills.
