@@ -8269,6 +8269,7 @@ ACMD_FUNC(whodrops)
 		clif_displaymessage(fd, msg_txt(sd,1284)); // Please enter item name/ID (usage: @whodrops <item name/ID>).
 		return -1;
 	}
+	bool foundResult = false;
 
 	std::map<t_itemid, std::shared_ptr<item_data>> item_array = {};
 	uint16 count = 1;
@@ -8296,10 +8297,50 @@ ACMD_FUNC(whodrops)
 		sprintf(atcmd_output, msg_txt(sd,1285), item_db.create_item_link( id ).c_str(), id->nameid); // Item: '%s' (ID:%u)
 		clif_displaymessage(fd, atcmd_output);
 
-		if (id->mob[0].chance == 0) {
+		// Iterate through map drop db
+		// probably inefficient, maybe create cache and map items to drops
+		for (const auto &it : map_drop_db) {
+			std::shared_ptr<s_map_drops> mapdrops = it.second;
+			std::shared_ptr<s_mob_drop> mobdrop;
+
+			for( const auto& globals_it : mapdrops->globals ){
+				mobdrop = globals_it.second;
+
+				if (mobdrop->nameid == id->nameid){
+					foundResult = true;
+					sprintf(atcmd_output, "- Any mob in %s: %02.02f%%", map_mapid2mapname( mapdrops->mapid), mobdrop->rate/100.);
+					clif_displaymessage(fd, atcmd_output);
+				}
+			}
+
+			// iterate through each monster entry, then iterate through each monster's item entries
+			for( const auto& monster_it : mapdrops->specific ){
+				for( const auto& item_it : monster_it.second ){
+					mobdrop = item_it.second;
+
+					if (mobdrop->nameid == id->nameid){
+						foundResult = true;
+						sprintf(atcmd_output, "- %s (%d) in %s: %02.02f%%", mob_db.find(monster_it.first)->jname.c_str(), monster_it.first, map_mapid2mapname( mapdrops->mapid), mobdrop->rate/100.);
+						clif_displaymessage(fd, atcmd_output);
+					}
+				}
+			}
+		}
+
+		for (const auto &it : global_drop_db) {
+			std::shared_ptr<s_mob_drop> mobdrop = it.second->drop;
+
+			if (mobdrop->nameid == id->nameid){
+				foundResult = true;
+				sprintf(atcmd_output, "- Any monster: %02.02f%% (x%d)",  mobdrop->rate * 100. / global_drop_db.getSum() , it.second->count );
+				clif_displaymessage(fd, atcmd_output);
+			}
+		}
+
+		if (id->mob[0].chance == 0 && !foundResult) {
 			strcpy(atcmd_output, msg_txt(sd,1286)); //  - Item is not dropped by mobs.
 			clif_displaymessage(fd, atcmd_output);
-		} else {
+		} else if (id->mob[0].chance != 0) {
 			sprintf(atcmd_output, msg_txt(sd,1287), MAX_SEARCH); //  - Common mobs with highest drop chance (only max %d are listed):
 			clif_displaymessage(fd, atcmd_output);
 

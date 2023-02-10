@@ -2850,7 +2850,6 @@ int mob_dead(struct mob_data *md, struct block_list *src, int type)
 				struct item global_item = {};
 				global_item.nameid=global_drop->drop->nameid;
 				global_item.identify= itemdb_isidentified(global_item.nameid);
-				ShowInfo("GET ITEM %d\n",global_item.nameid);
 				// process drops
 				if((temp = pc_additem(sd,&global_item,global_drop->count,LOG_TYPE_PICKDROP_PLAYER)) != 0) {
 						clif_additem(sd,0,0,temp);
@@ -6700,6 +6699,9 @@ std::shared_ptr<s_global_drop> GlobalDropDatabase::getRandomDrop(){
 	return nullptr;
 }
 
+int GlobalDropDatabase::getSum() const {
+	return sum;
+}
 
 /**
  * Copy skill from DB to monster

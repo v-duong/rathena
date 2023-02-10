@@ -12,3 +12,4 @@
 
 ACMD_DEF(showmobinfo),
 ACMD_DEF(advstats),
+ACMD_DEF(globaldrops),

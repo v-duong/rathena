@@ -333,6 +333,7 @@ public:
 
 	}
 
+	int getSum() const;
 	std::shared_ptr<s_global_drop> getRandomDrop();
 	const std::string getDefaultLocation() override;
 	uint64 parseBodyNode( const ryml::NodeRef& node ) override;
