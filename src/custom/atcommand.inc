@@ -500,3 +500,22 @@ ACMD_FUNC(advstats){
 
 
 
+ACMD_FUNC(globaldrops) {
+	clif_displaymessage(fd, "These items may drop from any monster kill. Only one item may drop for any given kill.");
+	for (const auto &it : global_drop_db) {
+		std::shared_ptr<s_mob_drop> mobdrop = it.second->drop;
+
+		if (it.second->count == 0)
+			continue;
+
+		std::shared_ptr<item_data> i_data = item_db.find(mobdrop->nameid);
+
+		if (i_data == nullptr)
+			continue;
+
+		sprintf(atcmd_output, "%s x%d: %02.02f%%", i_data->ename.c_str(), it.second->count , mobdrop->rate * 100. / global_drop_db.getSum());
+		clif_displaymessage(fd, atcmd_output);
+	}
+
+	return 0;
+}

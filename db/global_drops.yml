@@ -1,0 +1,23 @@
+###########################################################################
+# Global Drop Database
+###########################################################################
+#
+# Global Drop Settings
+#
+###########################################################################
+# - Item                            Name of item (Special: __NONE__ for filler, __MINIMUM__ for minimum sum value)
+#   Rate                            Drop rate of item
+#   Count                           How many should be given (Default: 0)
+#   Announce                        Should announce player with item rate (Default: False)
+###########################################################################
+
+Header:
+  Type: GLOBAL_DROP_DB
+  Version: 1
+
+Body:
+  - Item: __MINIMUM__
+    Rate: 10000
+  - Item: Monster_Coin
+    Rate: 5000
+    Count: 1
