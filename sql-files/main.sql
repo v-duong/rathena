@@ -784,6 +784,7 @@ CREATE TABLE IF NOT EXISTS `login` (
   `old_group` tinyint(3) NOT NULL default '0',
   `web_auth_token` varchar(17) null,
   `web_auth_token_enabled` tinyint(2) NOT NULL default '0',
+  `salt` varchar(32) NOT NULL default '',
   PRIMARY KEY  (`account_id`),
   KEY `name` (`userid`),
   UNIQUE KEY `web_auth_token_key` (`web_auth_token`)

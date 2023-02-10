@@ -37,6 +37,7 @@ struct mmo_account {
 	char pincode[PINCODE_LENGTH+1];		// pincode system
 	time_t pincode_change;	// (timestamp): last time of pincode change
 	char web_auth_token[WEB_AUTH_TOKEN_LENGTH]; // web authentication token (randomized on each login)
+	char salt[32+1];		// salt for md5 hashing
 #ifdef VIP_ENABLE
 	int old_group;
 	time_t vip_time;

@@ -248,7 +248,6 @@ int login_mmo_auth_new(const char* userid, const char* pass, const char sex, con
 	memset(&acc, '\0', sizeof(acc));
 	acc.account_id = -1; // assigned by account db
 	safestrncpy(acc.userid, userid, sizeof(acc.userid));
-	safestrncpy(acc.pass, pass, sizeof(acc.pass));
 	acc.sex = sex;
 	safestrncpy(acc.email, "a@a.com", sizeof(acc.email));
 	acc.expiration_time = ( login_config.start_limited_time != -1 ) ? time(NULL) + login_config.start_limited_time : 0;
@@ -256,6 +255,16 @@ int login_mmo_auth_new(const char* userid, const char* pass, const char sex, con
 	safestrncpy(acc.last_ip, last_ip, sizeof(acc.last_ip));
 	safestrncpy(acc.birthdate, "", sizeof(acc.birthdate));
 	safestrncpy(acc.pincode, "", sizeof(acc.pincode));
+
+	char temp[64+1];
+	MD5_String(std::to_string( time(NULL) ).c_str(), acc.salt);
+	//safestrncpy(acc.salt, temp, sizeof(acc.salt));
+
+	safestrncpy(temp, pass, sizeof(acc.pass));
+	MD5_String(strcat(temp, acc.salt), acc.pass);
+
+	//safestrncpy(acc.pass, pass, sizeof(acc.pass));
+
 	acc.pincode_change = 0;
 	acc.char_slots = MIN_CHARS;
 #ifdef VIP_ENABLE
@@ -345,8 +354,14 @@ int login_mmo_auth(struct login_session_data* sd, bool isServer) {
 		return 0; // 0 = Unregistered ID
 	}
 
+	if( login_config.use_md5_passwds ) {
+		char temp[64+1];
+		safestrncpy(temp, sd->passwd, sizeof(sd->passwd));
+		MD5_String(strcat(temp,acc.salt), sd->passwd);
+	}
+
 	if( !login_check_password(sd->md5key, sd->passwdenc, sd->passwd, acc.pass) ) {
-		ShowNotice("Invalid password (account: '%s', ip: %s)\n", sd->userid, ip);
+		ShowNotice("Invalid password (account: '%s', ip: %s, pass: %s)\n", sd->userid, ip, sd->passwd);
 		return 1; // 1 = Incorrect Password
 	}
 
