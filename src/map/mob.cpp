@@ -88,6 +88,7 @@ static struct eri *item_drop_list_ers;
 MobSummonDatabase mob_summon_db;
 MobChatDatabase mob_chat_db;
 MapDropDatabase map_drop_db;
+GlobalDropDatabase global_drop_db;
 
 /*==========================================
  * Local prototype declaration   (only required thing)
@@ -2843,6 +2844,20 @@ int mob_dead(struct mob_data *md, struct block_list *src, int type)
 		}
 
 		if(sd) {
+			std::shared_ptr<s_global_drop> global_drop = global_drop_db.getRandomDrop();
+			
+			if (global_drop != nullptr) {
+				struct item global_item = {};
+				global_item.nameid=global_drop->drop->nameid;
+				global_item.identify= itemdb_isidentified(global_item.nameid);
+				ShowInfo("GET ITEM %d\n",global_item.nameid);
+				// process drops
+				if((temp = pc_additem(sd,&global_item,global_drop->count,LOG_TYPE_PICKDROP_PLAYER)) != 0) {
+						clif_additem(sd,0,0,temp);
+						map_addflooritem(&global_item,global_drop->count,sd->bl.m,sd->bl.x,sd->bl.y,sd->status.char_id,0,0,2,0,true);
+				}
+			}
+
 			// process script-granted extra drop bonuses
 			t_itemid dropid = 0;
 
@@ -6540,6 +6555,152 @@ bool MapDropDatabase::parseDrop( const ryml::NodeRef& node, std::unordered_map<u
 	return true;
 }
 
+const std::string GlobalDropDatabase::getDefaultLocation() {
+	return std::string(db_path) + "/global_drops.yml";
+}
+
+uint64 GlobalDropDatabase::parseBodyNode( const ryml::NodeRef& node ){
+	std::string itemname;
+
+	if( !this->asString( node, "Item", itemname ) ){
+		return 0;
+	}
+
+	t_itemid itemid;
+
+	if (itemname == "__MINIMUM__") {
+		itemid = 0;
+	}
+	else {
+		std::shared_ptr<item_data> item = item_db.search_aegisname( itemname.c_str() );
+
+		if( item == nullptr ){
+			this->invalidWarning( node["Item"], "Item %s does not exist.\n", itemname.c_str() );
+			return false;
+		}
+
+		itemid = item->nameid;
+	}
+
+	std::shared_ptr<s_global_drop> globaldrop = this->find( itemid );
+	bool exists = globaldrop != nullptr;
+	
+	if( !exists ){
+		if( !this->nodesExist( node, { "Rate" } ) ){
+			return false;
+		}
+
+		globaldrop = std::make_shared<s_global_drop>();
+		globaldrop->drop = std::make_shared<s_mob_drop>();
+		globaldrop->drop->nameid = itemid;
+		globaldrop->drop->steal_protected = true;
+		globaldrop->announce = false;
+		globaldrop->count = 0;
+	}
+
+	if( this->nodeExists( node, "Rate" ) ){
+		uint16 rate;
+
+		if( !this->asUInt16Rate( node, "Rate", rate ) ){
+			return false;
+		}
+
+		if( rate == 0 ){
+			if( exists ){
+				this->erase( itemid );
+				return true;
+			}else{
+				this->invalidWarning( node["Rate"], "Rate %" PRIu16 " is below minimum of 1.\n", rate );
+				return false;
+			}
+		}
+
+		globaldrop->drop->rate = rate;
+	}
+
+	if( this->nodeExists( node, "Count" ) ){
+		unsigned short count;
+
+		if( !this->asUInt16( node, "Count", count ) ){
+			return false;
+		}
+
+		if (count > 0xFFFF) {
+			this->invalidWarning( node["Count"], "Count %" PRIu16 " is above maximum of 65535.\n", count );
+				return false;
+		}
+
+		globaldrop->count = count;
+		
+	}
+
+	if( this->nodeExists( node, "Announce" ) ){
+		bool announce;
+
+		if( !this->asBool( node, "Announce", announce ) ){
+			return false;
+		}
+
+		globaldrop->announce = announce;
+	}
+
+	if( !exists ){
+		this->put( itemid, globaldrop );
+	}
+
+	return 1;
+}
+
+
+void GlobalDropDatabase::loadingFinished() {
+	this->sum = 0;
+	uint16 minimum = 0;
+	bool hasItems = false;
+	for (auto &dropdata : *this) {
+		std::shared_ptr<s_mob_drop> drop = dropdata.second->drop;
+
+		if (drop->nameid == 0){
+			minimum = drop->rate;
+		} else if (dropdata.second->count > 0) {
+			this->sum += drop->rate;
+			hasItems = true;
+		}
+	}
+
+	if (this->sum < minimum)
+		this->sum = minimum;
+
+	if (!hasItems)
+		this->sum = 0;
+
+
+	TypesafeYamlDatabase::loadingFinished();
+}
+
+std::shared_ptr<s_global_drop> GlobalDropDatabase::getRandomDrop(){
+	if (this->sum == 0)
+		return nullptr;
+
+	int32 randomval = rnd()%this->sum;
+
+	for (auto &dropdata : *this) {
+		std::shared_ptr<s_mob_drop> drop = dropdata.second->drop;
+
+		if (drop->nameid == 0) {
+			continue;
+		}
+
+		randomval -= drop->rate;
+
+		if (randomval < 0) {
+			return dropdata.second;
+		}
+	}
+
+	return nullptr;
+}
+
+
 /**
  * Copy skill from DB to monster
  * @param mob Monster DB entry
@@ -6652,6 +6813,7 @@ static void mob_load(void)
 	mob_avail_db.load();
 	mob_summon_db.load();
 	map_drop_db.load();
+	global_drop_db.load();
 
 	mob_drop_ratio_adjust();
 	mob_skill_db_set();

@@ -318,6 +318,29 @@ private:
 
 extern MapDropDatabase map_drop_db;
 
+struct s_global_drop{
+	std::shared_ptr<s_mob_drop> drop;
+	bool announce;
+	unsigned short count;
+};
+
+class GlobalDropDatabase : public TypesafeYamlDatabase<t_itemid, s_global_drop>{
+private:
+	uint16 sum;
+
+public:
+	GlobalDropDatabase() : TypesafeYamlDatabase( "GLOBAL_DROP_DB", 1 ){
+
+	}
+
+	std::shared_ptr<s_global_drop> getRandomDrop();
+	const std::string getDefaultLocation() override;
+	uint64 parseBodyNode( const ryml::NodeRef& node ) override;
+	void loadingFinished() override;
+};
+
+extern GlobalDropDatabase global_drop_db;
+
 struct mob_data {
 	struct block_list bl;
 	struct unit_data  ud;
